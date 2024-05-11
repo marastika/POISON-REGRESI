@@ -1,0 +1,42 @@
+---
+title: "Tugas Hirarki Linear Regression"
+output: html_document
+date: "2023-03-29"
+---
+
+
+```{r}
+dataset=read.csv("E:\\TUGAS DATA STATISTIK DATA LANJUT\\OLAH DATA MARASTIKA AJI TUGAS REGRESI HIRARKI MODEL\\HirarkiData.csv")
+```
+```{r}
+dataset
+```
+```{r}
+model_0=lm(Y_Indeks.kebahagiaan~X1_Kesehatan+X2_Pendidikan,data=dataset)
+```
+
+```{r}
+model_1=lm(Y_Indeks.kebahagiaan~X1_Kesehatan+X2_Pendidikan+X3_Keharmonisan.keluarga+X4_Ketersediaan.waktu.luang+X5_Hubungan.Sosial,data=dataset)
+```
+
+```{r}
+model_2=lm(Y_Indeks.kebahagiaan~X1_Kesehatan+X2_Pendidikan+X3_Keharmonisan.keluarga+X4_Ketersediaan.waktu.luang+X5_Hubungan.Sosial+X6_Keadaan.Lingkungan+X7_Kondisi.Keamanan+X8_Pekerjaan+X9_Pendapatan.Rumah.tangga+X10_Kondisi.Rumah..dan.Aset,data=dataset)
+```
+
+```{r}
+summary(model_0)
+```
+
+```{r}
+summary(model_1)
+```
+```{r}
+summary(model_2)
+```
+```{r}
+anova(model_1,model_2)
+```
+```{r}
+summary(model_2)$r.squared-summary(model_1)$r.squared
+```
+

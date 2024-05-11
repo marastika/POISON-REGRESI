@@ -1,0 +1,255 @@
+---
+title: An R Markdown document converted from "/content/Untitled13.ipynb"
+output: html_document
+---
+
+```{r}
+housing<-read.csv("E:\\TUGAS DATA STATISTIK DATA LANJUT\\_1 housing.CSV", sep =",", encoding = "UTF-16")
+```
+
+```{r}
+housing
+```
+
+```{r}
+summary(housing)
+```
+
+```{r}
+which(is.na(housing))
+sum(is.na(housing))
+```
+
+```{r}
+housing[duplicated(housing)]
+```
+
+```{r}
+head(housing)
+```
+
+## Statistik Deskriptif
+
+```{r}
+cor(housing)
+```
+
+Korelasi paling besar yang akan menjadi fitur utama pada permodelan diantaranya adalah LSTAT,PTRATIO,RM dan INDUSTRIAL. Namun dikarenakan LSTAT memiliki korelasi cukup besar terhadap RM dan INDUSTRIAL diatas (0.60)maka kolom yang terhubung akan tidak digunakan untuk menghindari multikolinearitas. Jadi untuk penggunaan variabel independent lainnya adalah CRIM , TAX dan NOX.
+
+```{r}
+pairs(~ MEDV + LSTAT  +PTRATIO+CRIM+TAX+NOX+B, data=housing)
+```
+
+```{r}
+par(mfrow = c(3,3))
+hist(housing$MEDV)
+hist(housing$LSTAT)
+hist(housing$PTRATIO)
+hist(housing$CRIM)
+hist(housing$TAX)
+hist(housing$NOX)
+hist(housing$B)
+```
+
+```{r}
+ks.test(housing$MEDV,"pnorm",mean=mean(housing$MEDV),sd=sd(housing$MEDV))
+```
+
+```{r}
+# menambahkan gambar histogram rm dan kstest
+```
+
+```{r}
+par(mfrow = c(2,3))
+boxplot(housing$MEDV,col='blue',main='MEDV')
+boxplot(housing$LSTAT,col='blue',main='LSTAT')
+boxplot(housing$PTRATIO,col='blue',main='PTRATIO')
+boxplot(housing$CRIM,col='blue',main='CRIM')
+boxplot(housing$TAX,col='blue',main='TAX')
+boxplot(housing$NOX,col='blue',main='NOX')
+boxplot(housing$B,col='blue',main='B')
+```
+
+```{r}
+
+```
+
+## Linear Regression Model
+
+```{r}
+x=housing[,-14]
+```
+
+```{r}
+library(caret)
+process <- preProcess(x, method=c("range"))
+
+norm_scale <- predict(process, x)
+```
+
+```{r}
+lmfit <- lm(MEDV~LSTAT+CRIM+PTRATIO+TAX+NOX+B,data=housing)
+summary(lmfit)
+```
+
+```{r}
+AIC(lmfit)
+```
+
+pada kolom nox,tax dan crim memiliki nilai p value yang cukup besar diatas 5 persen atau 0.05 sehingga perlu untuk dibuang dari fitur .Apabila p value diatas 0.05 menandakan persentase kemungkinan prediktor tidak berpengaruh pada hasil.
+
+```{r}
+lmfit <- lm(MEDV~LSTAT+PTRATIO+B+CHAS+AGE+RAD+RM,data=housing)
+summary(lmfit)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(lmfit)
+```
+
+```{r}
+lmfit_nonrm <- lm(MEDV~LSTAT+PTRATIO+B+CHAS+AGE+RAD,data=housing)
+summary(lmfit_nonrm)
+```
+
+imputasi nilai RM pada prediktor variable diprioritaskan pada tingkat korelasi yang tinggi dibandingkan dengan nilai multi kolinearitasnya dengan kolom LSTAT dan menghasilkan nilai r squared yang lebih baik dibandingkan tanpa RM.
+
+Pada model Linear ini beberapa fitur yang berkorelasi cukup tinggi dengan MEDV dipilih untuk menghasilkan model linear regresi normal. Penggantian fitur nox, tax, dan crim dilakukan karena adanya nilai pvalue yang cukup tinggi dengan indikasi adanya indikasi signifikansi rendah pada prediktor tersebut. Sehingga kolom CHAS AGE RAD dan RM masuk pada model mesikpun memiliki nilai korelasi yang rendah untuk menggantikan lainnya.Hasil yang didapatkan pada linear model ini cukup mampu memprediksi dengan baik dengan nilai 0.698(r squared) dan dengan nilai pvalue dibawah alpha 0.05.
+
+------------------------------------------------------------------------
+
+## General Linear Model
+
+```{r}
+glmfit <- glm(MEDV~LSTAT+PTRATIO+B+CHAS+AGE+RAD+RM,data=housing,family='Gamma')
+summary(glmfit)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(glmfit)
+```
+
+```{r}
+glmfit_inverse <- glm(MEDV~LSTAT+PTRATIO+B+AGE+RAD+RM,data=housing,family='inverse.gaussian')
+summary(glmfit_inverse)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(glmfit_inverse)
+```
+
+Pada kedua model glm diatas terdapat dua link function yang berbeda dari familynya diantaranya adalah Gamma dan inverse Gaussian. Link function sangat berhubungan dengan hasil akhir model karena mampu menentukan besaran prediksi sesuai dengan bentuk distribusi data. Kedua link function tersebut dipilih karena untuk data harga rumah kecendrungan memiliki nilai yang semakin besar apabila nilai paramater yang diinput semakin besar(positive continous data). Kedua link function diatas memiliki hasil yang berbeda dimana Gamma link function cukup memiliki hasil prediksi yang cukup baik ditandai dengan nilai residual yang kecil bahkan mendekati nol pada rata rata kontinue dan nilai score AIC yang lebih kecil dibandingkan dengan yang inverse gaussian.
+
+## Binary Logistic Regression
+
+```{r}
+housing['biner_output_50']=ifelse(housing$MEDV>median(housing$MEDV),1,0)
+```
+
+```{r}
+library(dplyr)
+
+set.seed(1)
+df<-housing
+#create ID column
+df$id <- 1:nrow(df)
+
+#use 70% of dataset as training set and 30% as test set 
+train <- df %>% dplyr::sample_frac(0.70)
+test  <- dplyr::anti_join(df, train, by = 'id')
+```
+
+```{r}
+logistic_model=glm(biner_output_50~LSTAT+PTRATIO+B+CHAS+AGE+RAD+RM,family="binomial",train)
+```
+
+```{r}
+summary(logistic_model)
+```
+
+```{r}
+# Predicting in the test dataset
+```
+
+```{r}
+pred_prob <- predict(logistic_model, test, type = "response")
+```
+
+```{r}
+# Converting from probability to actual output
+train$pred_class <- ifelse(logistic_model$fitted.values >= 0.5, 1, 0)
+# Generating the classification table
+ctab_train <- table(train$biner_output_50, train$pred_class)
+ctab_train
+```
+
+```{r}
+# Converting from probability to actual output
+test$pred_class <- ifelse(pred_prob >= 0.5, 1, 0)
+# Generating the classification table
+ctab_test <- table(test$biner_output_50, test$pred_class)
+ctab_test
+```
+
+```{r}
+# Accuracy = (TP + TN)/(TN + FP + FN + TP)
+# Accuracy in Training dataset
+accuracy_train <- sum(diag(ctab_train))/sum(ctab_train)*100
+accuracy_train
+```
+
+```{r}
+# Accuracy in Test dataset
+accuracy_test <- sum(diag(ctab_test))/sum(ctab_test)*100
+accuracy_test
+```
+
+Pada binary logistic regression, goals akhir adalah memprediksi nilai median harga pada suatu kota apakah diatas nilai median atau dibawah nilai median. Apabila nilai harga median berada pada diatas mediannya maka bernilai 1 dan apabila tidak bernilai 0. Permodelan dimulai dari tahapan pemilihan fitur lalu disesuaikan dengan beberapa data melalui data training. Lalu akan dicoba untuk test
+
+## Geometric Regression
+
+Pada persamaan kali ini berfokus pada pencarian fungsi untuk menghitung seberapa besar percobaan sampai menghasilkan nilai 1 pada data median pada median harga di sebuah kota. Model akan dilatih pada data training dan dicoba pada test untuk dinilai validasinya.
+
+```{r}
+library(MASS)
+geom_regres=glm(biner_output_50~LSTAT+PTRATIO+B+CHAS+AGE+RAD+RM,family = negative.binomial(theta = 1),train)
+```
+
+```{r}
+summary(geom_regres)
+```
+
+```{r}
+pred_prob <- predict(geom_regres, test, type = "response")
+# Converting from probability to actual output
+train$pred_class <- ifelse(geom_regres$fitted.values >= 0.5, 1, 0)
+# Generating the classification table
+ctab_train <- table(train$biner_output_50, train$pred_class)
+ctab_train
+```
+
+```{r}
+# Converting from probability to actual output
+test$pred_class <- ifelse(pred_prob >= 0.5, 1, 0)
+# Generating the classification table
+ctab_test <- table(test$biner_output_50, test$pred_class)
+ctab_test
+```
+
+```{r}
+# Accuracy = (TP + TN)/(TN + FP + FN + TP)
+# Accuracy in Training dataset
+accuracy_train <- sum(diag(ctab_train))/sum(ctab_train)*100
+accuracy_train
+```
+
+```{r}
+# Accuracy in Test dataset
+accuracy_test <- sum(diag(ctab_test))/sum(ctab_test)*100
+accuracy_test
+```
+
+Pada data diatas, model menyesuaikan pada distribusi geometrik dengan theta 1. Pada data train model mampu mendapatkan akurasi sebesar 84 persen sedangkan pada data test sebesar 76 persen.

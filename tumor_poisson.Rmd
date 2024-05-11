@@ -1,0 +1,22 @@
+---
+title: "ProjectRegressiPoisson"
+output: html_document
+date: "2023-03-18"
+---
+```{r}
+```
+
+
+```{r}
+tumor<-read.csv("C:\\Users\\andik\\Documents\\Project\\Project R Regresi\\Tumor-Latihan-RegresiPoisson.csv", sep =",", encoding = "UTF-16")
+```
+```{r}
+tumor
+```
+
+```{r}
+poisson <- glm(tumor$Penyandang_tumor~.,data=housing,family='poisson')
+summary(poisson)
+```
+
+
